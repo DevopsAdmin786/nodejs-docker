@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejsapp-deployment
+  labels:
+    app: mynodeapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mynodeapp
+  template:
+    metadata:
+      labels:
+        app: mynodeapp
+    spec:
+      containers:
+      - name: mynodeapp
+        image: devopsadmin786/myapp
+        ports:
+        - containerPort: 3000
+  # strategy:
+  #  type: RollingUpdate
+  #  rollingUpdate:
+  #    maxUnavailable: 1
