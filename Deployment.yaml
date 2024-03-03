@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: mynodeapp
-        image: devopsadmin786/mynodeapp
+        image: devopsadmin786/mynodeapp:jenkins-{BUILD_ID}
         ports:
         - containerPort: 3000
   # strategy:
