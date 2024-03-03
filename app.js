@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 
 app.get('/', (req, res) => {
-  res.send('NodeJs App verion is v1.47 on Kubernetes Cluster');
+  res.send('NodeJs App verion is v1.49 on Kubernetes Cluster');
 });
 
 app.listen(3000, () => {
