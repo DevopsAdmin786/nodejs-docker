@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nodejsapp-deployment
-  namespace: production
+  #namespace: production  # if you do not define namesapce it will take it as default
   labels:
     app: mynodeapp
 spec:
