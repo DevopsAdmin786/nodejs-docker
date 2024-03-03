@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 
 app.get('/', (req, res) => {
-  res.send('Hello, Kubernetes World! We are good to GO');
+  res.send('Hello, Kubernetes Cluster With NodeJs Application');
 });
 
 app.listen(3000, () => {
