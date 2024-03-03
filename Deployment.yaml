@@ -16,8 +16,7 @@ spec:
     spec:
       containers:
       - name: mynodeapp
-        image: devopsadmin786/mynodeapp:jenkins-{BUILD_ID}
-        ports:
+        image: devopsadmin786/mynodeapp:latest
         - containerPort: 3000
   # strategy:
   #  type: RollingUpdate
