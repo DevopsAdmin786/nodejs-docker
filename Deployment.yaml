@@ -17,6 +17,7 @@ spec:
       containers:
       - name: mynodeapp
         image: devopsadmin786/mynodeapp
+        ports:
         - containerPort: 3000
   # strategy:
   #  type: RollingUpdate
