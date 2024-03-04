@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mynodeapp
+  name: mynodeapp-svc
 spec:
   selector:
     app: mynodeapp
