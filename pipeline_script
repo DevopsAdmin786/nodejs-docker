@@ -5,12 +5,14 @@ pipeline {
         KUBE_CONFIG = '/root/.kube/config' 
         //KUBE_NAMESPACE = 'production' 
         KUBE_NAMESPACE = 'default'
+        DEPLOYMENT_NAME = 'nodejsapp-deployment'
         DEPLOYMENT_YAML = '/var/lib/jenkins/workspace/mynodepipeline'
         REMOTE_HOST = '172.31.34.233'
         REMOTE_USER = 'ec2-user' 
 		DOCKER_REGISTRY = "devopsadmin786"
         DOCKER_IMAGE_NAME = "mynodeapp"
         DOCKER_IMAGE_TAG = "latest"
+        SERVICE_NAME = "mynodeapp-svc"
         BUILD_ID = "${env.BUILD_ID}"
         DOCKER_HUB_CREDENTIALS = 'dockerhublogin'
         SERVICE_FILE = "service.yaml"
@@ -53,11 +55,33 @@ pipeline {
             steps {
                 script {
                     sshagent(['kubernetserver']) {
-                         // Copy Deployment.yaml to remote Kubernetes server
+                        // Copy Deployment.yaml to remote Kubernetes server
+                        sh "sed -i s/latest/v1.${BUILD_ID}/g ${DEPLOYMENT_YAML}/Deployment.yaml"
                         sh "scp -o StrictHostKeyChecking=no ${DEPLOYMENT_YAML}/*.yaml ${REMOTE_USER}@${REMOTE_HOST}:${SERVER_PATH}"
-                        // Update Kubernetes deployment with the new Docker image on the remote server
-                       // sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} set image -f ${SERVER_PATH}/Deployment.yaml ${DOCKER_IMAGE_NAME}=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
-                        sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} set image -f ${SERVER_PATH}/Deployment.yaml ${DOCKER_IMAGE_NAME}=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:v1.${BUILD_ID}"
+                        
+                        // Execute kubectl command to check deployment status
+                        def deploymentStatus = sh( script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} get deployment,pods,svc | grep -w ${DEPLOYMENT_NAME} |wc -l", returnStdout: true).trim().toInteger()
+                        def serviceStatus = sh( script: "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} get deployment,pods,svc | grep -w ${SERVICE_NAME} |wc -l", returnStdout: true).trim().toInteger()
+                        echo "deploymentStatus Command : ${deploymentStatus}"
+						echo "serviceStatus Command : ${serviceStatus}"
+                        if (deploymentStatus == 0 && serviceStatus== 0) {
+                            
+                            echo "Deployment and Service does not exist! Creating Deployment and Service"
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} apply -f ${SERVER_PATH}/Deployment.yaml"
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} apply -f ${SERVER_PATH}/service.yaml"
+                        }
+                        else if(deploymentStatus == 0 && serviceStatus == 1){
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} delete service ${SERVICE_NAME}"
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} apply -f ${SERVER_PATH}/Deployment.yaml"
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} apply -f ${SERVER_PATH}/service.yaml"
+                        }
+                        else if(deploymentStatus == 1 && serviceStatus == 0) {
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} apply -f ${SERVER_PATH}/service.yaml"
+                        }
+                        else {    
+                            sh "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} sudo kubectl --kubeconfig=${KUBE_CONFIG} --namespace=${KUBE_NAMESPACE} set image -f ${SERVER_PATH}/Deployment.yaml ${DOCKER_IMAGE_NAME}=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:v1.${BUILD_ID}"
+                        }                        
+  
                     }
                 }
             }
